@@ -22,14 +22,14 @@
 #include <display/plugins/SmartGrindPlugin.h>
 #include <display/plugins/WebUIPlugin.h>
 #include <display/plugins/mDNSPlugin.h>
-//@@kuf 260110 Add Header for KMix Panel
-#include <display/plugins/KmixPanelPlugin.h>
 
 #ifndef GAGGIMATE_HEADLESS
 #include <display/drivers/AmoledDisplayDriver.h>
 #include <display/drivers/LilyGoDriver.h>
 #include <display/drivers/WaveshareDriver.h>
 
+//@@kuf 260110 Add Header for KMix Panel
+#include <display/plugins/KmixPanelPlugin.h>
 #endif
 
 const String LOG_TAG = F("Controller");
@@ -78,9 +78,10 @@ void Controller::setup() {
     pluginManager->registerPlugin(&BLEScales);
     pluginManager->registerPlugin(new LedControlPlugin());
 
+    #ifndef GAGGIMATE_HEADLESS
     //@@kuf 260110 register our shiny new Plugin
     pluginManager->registerPlugin(new KmixPanelPlugin());
-   
+    #endif
 
     pluginManager->setup(this);
 

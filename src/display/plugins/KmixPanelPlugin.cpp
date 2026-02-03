@@ -1,8 +1,7 @@
+#ifndef GAGGIMATE_HEADLESS
 #include "KmixPanelPlugin.h"
 #include <display/core/Controller.h>
 #include <display/core/Event.h>
-
-//static ExtensionIOXL9555 kmixpanel;
 
 void KmixPanelPlugin::setup(Controller *controller, PluginManager *pluginManager) {
     this->controller = controller;
@@ -124,4 +123,5 @@ void KmixPanelPlugin::updateControl() {
     return;
 }
 
+#endif
 
