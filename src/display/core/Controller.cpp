@@ -297,6 +297,10 @@ void Controller::loop() {
     }
 
     if (now - lastProgress > PROGRESS_INTERVAL) {
+        //@@kuf 20260208 activate STEAM instantly - not if hot enough - to enable valve
+        // otherwise the steam is going into the watertank. Unfortunately the pump starts here as well...
+        if (mode == MODE_STEAM) activate();
+        
         // Check if steam is ready
         if (mode == MODE_STEAM && !steamReady && currentTemp + 5.f > getTargetTemp()) {
             activate();
@@ -528,7 +532,7 @@ void Controller::updateControl() {
         if (currentProcess->getType() == MODE_STEAM) {
             targetPressure = settings.getSteamPumpCutoff();
             targetFlow = currentProcess->getPumpValue() * 0.1f;
-            clientController.sendAdvancedOutputControl(false, targetTemp, false, targetPressure, targetFlow);
+            clientController.sendAdvancedOutputControl(true, targetTemp, false, targetPressure, targetFlow);
             return;
         }
         if (currentProcess->getType() == MODE_BREW) {
