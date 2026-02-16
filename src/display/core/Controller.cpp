@@ -297,9 +297,6 @@ void Controller::loop() {
     }
 
     if (now - lastProgress > PROGRESS_INTERVAL) {
-        //@@kuf 20260208 activate STEAM instantly - not if hot enough - to enable valve
-        // otherwise the steam is going into the watertank. Unfortunately the pump starts here as well...
-        if (mode == MODE_STEAM) activate();
         
         // Check if steam is ready
         if (mode == MODE_STEAM && !steamReady && currentTemp + 5.f > getTargetTemp()) {
@@ -549,7 +546,10 @@ void Controller::updateControl() {
     }
     targetPressure = 0.0f;
     targetFlow = 0.0f;
-    clientController.sendOutputControl(isActive() && currentProcess->isRelayActive(),
+    //@@kuf 20260209 - switch valve ON if we're not active for kMix mod. 
+    //clientController.sendOutputControl(isActive() && currentProcess->isRelayActive(),
+    //                                   isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
+    clientController.sendOutputControl(isActive() ? currentProcess->isRelayActive() : true,
                                        isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
 }
 

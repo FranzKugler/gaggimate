@@ -30,7 +30,8 @@ class GrindProcess : public Process {
         }
     }
 
-    bool isRelayActive() override { return false; }
+    //@@kuf 20260209 isRelayActive changed to true by default (kMix logic)
+    bool isRelayActive() override { return true; }
 
     bool isAltRelayActive() override { return active; }
 

@@ -151,7 +151,11 @@ class BrewProcess : public Process {
         }
     }
 
-    bool isActive() override { return processPhase == ProcessPhase::RUNNING; }
+    bool isActive() override { 
+        bool isactive = processPhase == ProcessPhase::RUNNING;
+        if (processPhase == ProcessPhase::FINISHED && (millis() - finished < 3000)) isactive = true;
+        return isactive; 
+    }
 
     bool isComplete() override {
         if (target == ProcessTarget::TIME) {

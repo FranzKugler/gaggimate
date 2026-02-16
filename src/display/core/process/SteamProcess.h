@@ -15,6 +15,7 @@ class SteamProcess : public Process {
         started = millis();
     }
 
+    //@@kuf 20260209 isRelayActive changed to true by default (kMix logic)
     bool isRelayActive() override { return true; };
 
     bool isAltRelayActive() override { return false; };
