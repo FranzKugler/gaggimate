@@ -9,6 +9,11 @@
 
 class BrewProcess : public Process {
   public:
+    // Venting configuration for post-brew pressure release
+    static constexpr unsigned long VENT_PULSE_OPEN_MS = 200;      // How long to keep vent open
+    static constexpr unsigned long VENT_PULSE_CLOSED_MS = 500;    // How long to keep vent closed
+    static constexpr unsigned long VENT_TOTAL_DURATION_MS = 5000; // Total venting duration after brew finish
+    
     Profile profile;
     ProcessTarget target;
     double brewDelay;
@@ -87,7 +92,20 @@ class BrewProcess : public Process {
 
     bool isRelayActive() override {
         if (processPhase == ProcessPhase::FINISHED) {
-            return false;
+            // Handle venting pulse pattern after brew finishes
+            unsigned long timeSinceFinish = millis() - finished;
+            
+            // Stop venting after total duration has elapsed
+            if (timeSinceFinish >= VENT_TOTAL_DURATION_MS) {
+                return false;
+            }
+            
+            // Calculate position in the pulse cycle
+            unsigned long cyclePeriod = VENT_PULSE_OPEN_MS + VENT_PULSE_CLOSED_MS;
+            unsigned long positionInCycle = timeSinceFinish % cyclePeriod;
+            
+            // Return true (vent open) during the open phase
+            return positionInCycle < VENT_PULSE_OPEN_MS;
         }
         return currentPhase.valve;
     }
