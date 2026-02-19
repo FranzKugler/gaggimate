@@ -549,9 +549,11 @@ void Controller::updateControl() {
     targetPressure = 0.0f;
     targetFlow = 0.0f;
     //@@kuf 20260209 - switch valve ON if we're not active for kMix mod. 
+    // Always call isRelayActive() to allow post-brew venting sequence
     //clientController.sendOutputControl(isActive() && currentProcess->isRelayActive(),
     //                                   isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
-    clientController.sendOutputControl(isActive() ? currentProcess->isRelayActive() : true,
+    bool relayActive = currentProcess != nullptr ? currentProcess->isRelayActive() : true;
+    clientController.sendOutputControl(relayActive,
                                        isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
 }
 
