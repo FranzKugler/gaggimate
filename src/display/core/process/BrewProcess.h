@@ -95,17 +95,17 @@ class BrewProcess : public Process {
             // Handle venting pulse pattern after brew finishes
             unsigned long timeSinceFinish = millis() - finished;
             
-            // Stop venting after total duration has elapsed
+            // Stop venting after total duration has elapsed - return true (valve closed)
             if (timeSinceFinish >= VENT_TOTAL_DURATION_MS) {
-                return false;
+                return true;
             }
             
             // Calculate position in the pulse cycle
             unsigned long cyclePeriod = VENT_PULSE_OPEN_MS + VENT_PULSE_CLOSED_MS;
             unsigned long positionInCycle = timeSinceFinish % cyclePeriod;
             
-            // Return true (vent open) during the open phase
-            return positionInCycle < VENT_PULSE_OPEN_MS;
+            // Return false (vent open) during the open phase, true (vent closed) during closed phase
+            return positionInCycle >= VENT_PULSE_OPEN_MS;
         }
         return currentPhase.valve;
     }

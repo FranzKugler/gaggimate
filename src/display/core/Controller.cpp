@@ -548,11 +548,13 @@ void Controller::updateControl() {
     }
     targetPressure = 0.0f;
     targetFlow = 0.0f;
-    //@@kuf 20260209 - switch valve ON if we're not active for kMix mod. 
-    // Always call isRelayActive() to allow post-brew venting sequence
+    //@@kuf 20260220 - venting after brew for kMix mod. Code changed by Claude 4.5 
     //clientController.sendOutputControl(isActive() && currentProcess->isRelayActive(),
     //                                   isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
-    bool relayActive = currentProcess != nullptr ? currentProcess->isRelayActive() : true;
+    
+    // Use currentProcess for relay control, fallback to lastProcess for post-brew venting
+    Process *processForRelay = currentProcess != nullptr ? currentProcess : lastProcess;
+    bool relayActive = processForRelay != nullptr ? processForRelay->isRelayActive() : true;
     clientController.sendOutputControl(relayActive,
                                        isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
 }
