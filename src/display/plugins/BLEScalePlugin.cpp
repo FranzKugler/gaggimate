@@ -75,10 +75,10 @@ void BLEScalePlugin::setup(Controller *controller, PluginManager *manager) {
     }
 
     manager->on("controller:ready", [this](Event const &) {
-        if (this->controller != nullptr && this->controller->getMode() != MODE_STANDBY) {
-            ESP_LOGI("BLEScalePlugin", "Resuming scanning");
+        if (this->controller != nullptr) {
+            ESP_LOGI("BLEScalePlugin", "Starting BLE scale scan on startup");
             scan();
-            active = true;
+            active = this->controller->getMode() != MODE_STANDBY;
         }
     });
     manager->on("controller:brew:prestart", [this](Event const &) { onProcessStart(); });
@@ -128,6 +128,18 @@ void BLEScalePlugin::update() {
     if (controller->isVolumetricAvailable())
         controller->setVolumetricOverride(hasConnectedScale);
 
+    if (scale == nullptr && controller->getSettings().getSavedScale() != "" && scanner != nullptr) {
+        // Protected scanner access with null checks
+        auto discoveredScales = scanner->getDiscoveredScales();
+        for (const auto &d : discoveredScales) {
+            if (d.getAddress().toString() == controller->getSettings().getSavedScale().c_str()) {
+                ESP_LOGI("BLEScalePlugin", "Connecting to last known scale");
+                connect(d.getAddress().toString());
+                break;
+            }
+        }
+    }
+
     if (!active)
         return;
 
@@ -142,16 +154,6 @@ void BLEScalePlugin::update() {
                 if (scanner != nullptr) {
                     scanner->initializeAsyncScan();
                 }
-            }
-        }
-    } else if (controller->getSettings().getSavedScale() != "" && scanner != nullptr) {
-        // Protected scanner access with null checks
-        auto discoveredScales = scanner->getDiscoveredScales();
-        for (const auto &d : discoveredScales) {
-            if (d.getAddress().toString() == controller->getSettings().getSavedScale().c_str()) {
-                ESP_LOGI("BLEScalePlugin", "Connecting to last known scale");
-                connect(d.getAddress().toString());
-                break;
             }
         }
     }
