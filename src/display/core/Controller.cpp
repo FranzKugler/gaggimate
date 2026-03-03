@@ -570,7 +570,6 @@ void Controller::updateControl() {
     }
     targetPressure = 0.0f;
     targetFlow = 0.0f;
-<<<<<<< HEAD
     //@@kuf 20260220 - venting after brew for kMix mod. Code changed by Claude 4.5 
     //clientController.sendOutputControl(isActive() && currentProcess->isRelayActive(),
     //                                   isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
@@ -580,9 +579,6 @@ void Controller::updateControl() {
     bool relayActive = processForRelay != nullptr ? processForRelay->isRelayActive() : true;
     clientController.sendOutputControl(relayActive,
                                        isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
-=======
-    clientController.sendOutputControl(active && proc->isRelayActive(), active ? proc->getPumpValue() : 0, targetTemp);
->>>>>>> origin/master
 }
 
 void Controller::activate() {
