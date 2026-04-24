@@ -42,7 +42,9 @@ void KmixPanelPlugin::updateControl() {
 	Settings settings = this->controller->getSettings();
     int mode = this->controller->getMode();
 	bool isActive = this->controller->isActive();
-	bool temperatureOK = (this->controller->getTargetTemp() - this->controller->getCurrentTemp()) < 0.1;
+	// Use the same filtered temperature-stable flag as the UI heating indicator
+	// (computed from rolling average in DefaultUI::updateTempStableFlag)
+	bool temperatureOK = this->controller->getUI() != nullptr && this->controller->getUI()->isTempStable();
 	int newLEDs = 0;
 	
 	switch (mode) {

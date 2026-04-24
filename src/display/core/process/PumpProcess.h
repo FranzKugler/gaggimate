@@ -11,8 +11,7 @@ class PumpProcess : public Process {
 
     explicit PumpProcess(int duration = HOT_WATER_SAFETY_DURATION_MS) : duration(duration) { started = millis(); }
 
-    //@@kuf 20260209 isRelayActive changed to true by default (kMix logic)
-    bool isRelayActive() override { return true; };
+    bool isRelayActive() override { return false; };
 
     bool isAltRelayActive() override { return false; };
 

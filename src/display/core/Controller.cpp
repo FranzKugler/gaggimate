@@ -3,6 +3,7 @@
 #include "esp_sntp.h"
 #include <SD_MMC.h>
 #include <SPIFFS.h>
+#include <Wire.h>
 #include <ctime>
 #include <display/config.h>
 #include <display/core/constants.h>
@@ -24,11 +25,13 @@
 #include <display/plugins/mDNSPlugin.h>
 
 #ifndef GAGGIMATE_HEADLESS
+#include <ExtensionIOXL9555.hpp>
 #include <display/drivers/AmoledDisplayDriver.h>
 #include <display/drivers/LilyGoDriver.h>
 #include <display/drivers/WaveshareDriver.h>
 
-//@@kuf 260110 Add Header for KMix Panel
+// Machine-type-specific panel plugins
+#include <display/plugins/AromaPanelPlugin.h>
 #include <display/plugins/KmixPanelPlugin.h>
 #endif
 
@@ -79,8 +82,17 @@ void Controller::setup() {
     pluginManager->registerPlugin(new LedControlPlugin());
 
     #ifndef GAGGIMATE_HEADLESS
-    //@@kuf 260110 register our shiny new Plugin
-    pluginManager->registerPlugin(new KmixPanelPlugin());
+    // Register machine-type-specific panel plugin
+    switch (getMachineType()) {
+        case MACHINE_KMIX:
+            pluginManager->registerPlugin(new KmixPanelPlugin());
+            break;
+        case MACHINE_AROMA:
+            pluginManager->registerPlugin(new AromaPanelPlugin());
+            break;
+        default: // MACHINE_GAGGIA – no additional panel plugin required
+            break;
+    }
     #endif
 
     pluginManager->setup(this);
@@ -139,6 +151,36 @@ void Controller::setupPanel() {
         ESP.restart();
     }
     driver->init();
+
+    // Auto-detect machine type via XL9555 GPIO expander on every boot.
+    //
+    // Strategy (pin-based, preferred over address-based to keep I2C addresses free):
+    //   1. Try to init the XL9555 at XL9555_SLAVE_ADDRESS5.
+    //   2. If the chip is found, configure IO4 as INPUT and read it.
+    //      kMix board:  IO4 is open / floating → reads HIGH (XL9555 internal pull-up)
+    //      Aroma board: IO4 is tied to GND on the PCB  → reads LOW
+    //   3. No chip found → Gaggia Classic (no expander needed).
+    //
+    // The result is stored in Controller::machineType (not in NVS/Settings).
+    {
+        ExtensionIOXL9555 detector;
+        if (detector.init(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, XL9555_SLAVE_ADDRESS5)) {
+            detector.pinMode(XL9555_MACHINE_DETECT_IO, INPUT);
+            delay(5); // let I/O line settle
+            int detectLevel = detector.digitalRead(XL9555_MACHINE_DETECT_IO);
+            if (detectLevel == LOW) {
+                machineType = MACHINE_AROMA;
+                ESP_LOGI("Controller", "XL9555 IO4=LOW → machine type: Aroma");
+            } else {
+                machineType = MACHINE_KMIX;
+                ESP_LOGI("Controller", "XL9555 IO4=HIGH (floating) → machine type: kMix");
+            }
+        } else {
+            machineType = MACHINE_GAGGIA;
+            ESP_LOGI("Controller", "No XL9555 found → machine type: Gaggia Classic");
+        }
+        // Wire stays initialised; KmixPanelPlugin / AromaPanelPlugin will reuse it.
+    }
 }
 #endif
 
@@ -568,15 +610,44 @@ void Controller::updateControl() {
     }
     targetPressure = 0.0f;
     targetFlow = 0.0f;
-    //@@kuf 20260220 - venting after brew for kMix mod. Code changed by Claude 4.5 
-    //clientController.sendOutputControl(isActive() && currentProcess->isRelayActive(),
-    //                                   isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
-    
-    // Use currentProcess for relay control, fallback to lastProcess for post-brew venting
-    Process *processForRelay = currentProcess != nullptr ? currentProcess : lastProcess;
-    bool relayActive = processForRelay != nullptr ? processForRelay->isRelayActive() : true;
+
+    // Determine relay (solenoid valve) state depending on machine type:
+    //
+    // MACHINE_GAGGIA: original behaviour – valve is driven per profile phase;
+    //   it is always closed when no process is active.
+    //
+    // MACHINE_KMIX: the kMix has no traditional 3-way solenoid valve.
+    //   The relay line is held open whenever a process is running.
+    //   For BrewProcess the per-phase valve flag and the post-brew venting
+    //   pulse (defined in BrewProcess::isRelayActive) are still honoured.
+    //   After brew, lastProcess is used so the venting pulse keeps working.
+    //
+    // MACHINE_AROMA: no valve at all – the relay output is not wired.
+    //   We send true so the controller side does not block anything.
+    bool relayActive;
+    switch (getMachineType()) {
+        case MACHINE_KMIX: {
+            Process *processForRelay = currentProcess != nullptr ? currentProcess : lastProcess;
+            if (processForRelay == nullptr) {
+                relayActive = true;
+            } else if (processForRelay->getType() == MODE_BREW) {
+                // BrewProcess manages valve per phase + post-brew venting pulse
+                relayActive = processForRelay->isRelayActive();
+            } else {
+                // Steam / pump / grind: relay open whenever process is active
+                relayActive = active;
+            }
+            break;
+        }
+        case MACHINE_AROMA:
+            relayActive = true; // no valve present, value is ignored by hardware
+            break;
+        default: // MACHINE_GAGGIA – original behaviour
+            relayActive = active && proc != nullptr && proc->isRelayActive();
+            break;
+    }
     clientController.sendOutputControl(relayActive,
-                                       isActive() ? currentProcess->getPumpValue() : 0, targetTemp);
+                                       active ? proc->getPumpValue() : 0, targetTemp);
 }
 
 void Controller::activate() {

@@ -52,6 +52,10 @@ class DefaultUI {
 
     void applyTheme();
 
+    // Returns the filtered temperature-stable flag computed by updateTempStableFlag().
+    // Mirrors the green/red heating indicator logic in adjustHeatingIndicator().
+    bool isTempStable() const { return isTemperatureStable; }
+
   private:
     void setupPanel();
     void setupState();

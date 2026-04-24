@@ -40,4 +40,17 @@
 #define WIFI_CONNECT_TIMEOUT_MS 30000
 #define DEFAULT_WIFI_AP_TIMEOUT_MS 600000
 
+// Machine type constants
+// MACHINE_GAGGIA: Standard Gaggia Classic / original GaggiMate target machine
+// MACHINE_KMIX:  Kenwood kMix - uses XL9555 I2C GPIO expander for LED panel, no 3-way solenoid valve
+// MACHINE_AROMA: Aroma machine - uses same XL9555 chip at same address; only brew_ok+steam_ok LEDs
+#define MACHINE_GAGGIA 0
+#define MACHINE_KMIX   1
+#define MACHINE_AROMA  2
+
+// IO4 on the XL9555 expander is used as the machine-type identification pin.
+// kMix  board: IO4 open/floating → reads HIGH (XL9555 internal pull-up)
+// Aroma board: IO4 pulled to GND on PCB   → reads LOW
+#define XL9555_MACHINE_DETECT_IO 4
+
 #endif // CONSTANTS_H

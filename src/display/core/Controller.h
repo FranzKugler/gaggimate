@@ -103,6 +103,9 @@ class Controller {
 
     NimBLEClientController *getClientController() { return &clientController; }
 
+    // Returns the auto-detected machine type (set during setupPanel, MACHINE_GAGGIA / _KMIX / _AROMA)
+    int getMachineType() const { return machineType; }
+
   private:
     // Initialization methods
 #ifndef GAGGIMATE_HEADLESS
@@ -133,6 +136,7 @@ class Controller {
     NimBLEClientController clientController;
     hw_timer_t *timer = nullptr;
     Settings settings;
+    int machineType = MACHINE_GAGGIA; // set by hardware auto-detection in setupPanel()
     PluginManager *pluginManager{};
     ProfileManager *profileManager{};
 
